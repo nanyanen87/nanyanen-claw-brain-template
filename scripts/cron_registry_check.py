@@ -16,7 +16,7 @@ themselves are broken). Checks:
   common:
     6. reviewBy overdue entries
 
-Output is deterministic, Discord-ready Japanese. Index: TOOLS.md "Scripts".
+Output is deterministic, chat-ready Japanese. Index: TOOLS.md "Scripts".
 """
 from __future__ import annotations
 

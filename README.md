@@ -97,6 +97,8 @@ Repeatable workflows do **not** get written into memory as prose. They become a 
 - **Not a maintained OSS package.** No release cadence, no support, no compatibility promise. Upstream OpenClaw will change; the boundary table will drift. Treat this as a snapshot to learn from and fork, not a dependency to pin.
 - **Not a config you can run unedited.** The cron ledger, user notes, and identity are dummies. Nothing here is wired to a real chat platform or scheduler until you wire it.
 - **Not security-hardened for your environment.** The skills assume a trusted, single-user workspace. Review before pointing them at anything real.
+- **Not fully portable.** The drift checker (`scripts/cron_registry_check.py`) and `skills/memory-maintenance/check.sh` currently verify launchd units only — macOS-specific. On Linux/systemd, relay jobs are not covered until you port those checks.
+- **Not bilingual throughout.** The README is English/Japanese, but skill documentation and script output are currently Japanese-only.
 
 ## License
 
