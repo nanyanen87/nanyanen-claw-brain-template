@@ -5,16 +5,21 @@ Usage:
   python3 scripts/cron_registry_check.py
 
 Report-only (never mutates registry or cron; always exits 0 unless the inputs
-themselves are broken). Checks:
-  runner=openclaw-cron (agentTurn=true):
-    1. unregistered cron jobs (live cron not in registry)
-    2. dead pointers (registry entry whose cronJobId no longer exists)
-    3. field mismatches (schedule expr/tz, delivery target, enabled)
-    4. unhealthy jobs (lastRunStatus == error / consecutiveErrors > 0)
-  runner=launchd (agentTurn=false, relay jobs):
-    5. plist missing / not loaded / non-zero last exit status
-  common:
-    6. reviewBy overdue entries
+themselves are broken). Every registered job — LLM (agentTurn=true) or pure
+command payload (agentTurn=false) — is a first-class `openclaw cron` job and
+is checked the same way, because both are queryable via the same
+`openclaw cron list --json` call. There is no separate OS-scheduler path:
+non-LLM jobs are created with `openclaw cron add --command <shell>` and run
+on the Gateway, which is also what makes this checker portable across hosts
+(a Mac dev box or a Linux VPS behave identically here).
+
+Checks:
+  1. unregistered live jobs (live cron not in registry)
+  2. dead pointers (registry entry whose cronJobId no longer exists)
+  3. field mismatches (schedule expr/tz, delivery target, enabled)
+  4. payload-kind mismatch (registry agentTurn vs. live payload.kind)
+  5. unhealthy jobs (lastRunStatus == error / consecutiveErrors > 0)
+  6. reviewBy overdue entries
 
 Output is deterministic, chat-ready Japanese. Index: TOOLS.md "Scripts".
 """
@@ -22,8 +27,6 @@ from __future__ import annotations
 
 import datetime
 import json
-import os
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -67,25 +70,8 @@ def delivery_target(job: dict) -> str:
     return f"{ch}:{to}"
 
 
-def check_launchd(entry: dict) -> list[str]:
-    label = entry.get("launchdLabel", "")
-    out: list[str] = []
-    if not label:
-        return [f"launchd ジョブに launchdLabel がない: {entry['id']}"]
-    plist = Path.home() / "Library" / "LaunchAgents" / f"{label}.plist"
-    if not plist.exists():
-        return [f"plist が存在しない: {entry['id']} → {plist}"]
-    proc = subprocess.run(
-        ["launchctl", "print", f"gui/{os.getuid()}/{label}"],
-        capture_output=True, text=True, timeout=30,
-    )
-    if proc.returncode != 0:
-        out.append(f"launchd にロードされていない: {entry['id']} ({label})")
-        return out
-    m = re.search(r"last exit code = (\S+)", proc.stdout)
-    if m and m.group(1) not in ("0", "(never", "never"):
-        out.append(f"relay 最終実行が異常終了: {entry['id']} (exit {m.group(1)})")
-    return out
+def live_payload_kind(job: dict) -> str:
+    return (job.get("payload") or {}).get("kind", "")
 
 
 def main() -> int:
@@ -93,9 +79,7 @@ def main() -> int:
     live = load_live_jobs()
     live_by_id = {j["id"]: j for j in live}
     entries = registry.get("jobs", [])
-    cron_entries = [e for e in entries if e.get("runner") == "openclaw-cron"]
-    launchd_entries = [e for e in entries if e.get("runner") == "launchd"]
-    reg_by_cron = {e["cronJobId"]: e for e in cron_entries}
+    reg_by_cron = {e["cronJobId"]: e for e in entries if e.get("cronJobId")}
     today = datetime.datetime.now(JST).date()
 
     problems: list[str] = []
@@ -104,10 +88,10 @@ def main() -> int:
         if job["id"] not in reg_by_cron:
             problems.append(f"台帳未登録の cron: 「{job.get('name')}」({job['id'][:8]})")
 
-    for e in cron_entries:
-        job = live_by_id.get(e["cronJobId"])
+    for e in entries:
+        job = live_by_id.get(e.get("cronJobId"))
         if job is None:
-            problems.append(f"死にポインタ: {e['id']} → cron {e['cronJobId'][:8]} が存在しない")
+            problems.append(f"死にポインタ: {e['id']} → cron {e.get('cronJobId', '?')[:8]} が存在しない")
             continue
         rs, ls = e.get("schedule", {}), job.get("schedule", {})
         if rs.get("expr") != ls.get("expr") or rs.get("tz") != ls.get("tz"):
@@ -122,10 +106,13 @@ def main() -> int:
             problems.append(
                 f"enabled 不一致: {e['id']} 台帳={e.get('enabled')} 実機={job.get('enabled')}"
             )
-
-    for e in launchd_entries:
-        if e.get("enabled"):
-            problems.extend(check_launchd(e))
+        expected_kind = "agentTurn" if e.get("agentTurn") else "command"
+        actual_kind = live_payload_kind(job)
+        if actual_kind and actual_kind != expected_kind:
+            problems.append(
+                f"payload 種別不一致: {e['id']} 台帳 agentTurn={e.get('agentTurn')}"
+                f"（{expected_kind} 想定）実機={actual_kind}"
+            )
 
     overdue = []
     for e in entries:
@@ -134,8 +121,8 @@ def main() -> int:
             overdue.append(f"見直し期限超過: {e['id']} (reviewBy {rb}) — 継続/変更/廃止を判断して reviewBy を更新")
 
     unhealthy = []
-    for e in cron_entries:
-        job = live_by_id.get(e["cronJobId"])
+    for e in entries:
+        job = live_by_id.get(e.get("cronJobId"))
         state = (job or {}).get("state", {})
         if state.get("lastRunStatus") == "error" or state.get("consecutiveErrors", 0) > 0:
             reason = state.get("lastError") or state.get("lastErrorReason") or "unknown"
@@ -143,11 +130,14 @@ def main() -> int:
                 f"実行エラー: {e['id']} (連続{state.get('consecutiveErrors', 0)}回, {reason})"
             )
 
+    n_agent = sum(1 for e in entries if e.get("agentTurn"))
+    n_command = len(entries) - n_agent
+
     lines = [f"【cron 台帳ドリフトチェック｜{today.isoformat()}】"]
     if not problems and not overdue and not unhealthy:
         lines.append(
             f"問題なし。台帳 {len(entries)} 件"
-            f"（agent turn {len(cron_entries)} / relay {len(launchd_entries)}）"
+            f"（agentTurn {n_agent} / command {n_command}）"
             f" / 実 cron {len(live)} 件、全項目一致。"
         )
     else:

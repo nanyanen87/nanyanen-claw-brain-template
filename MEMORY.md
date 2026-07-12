@@ -11,7 +11,7 @@
 ## Index
 
 - [example project overview](memory/example-project.md) — what the project is, who it serves, architecture at a glance. Read for any project-related topic. _(dummy — replace with your own.)_
-- cron registry: `memory/cron-registry.json` — the source of truth for ALL cron jobs (category: reminder/report/automation, with purpose + reviewBy). Do not infer jobs from cron names/prompts; read this explicit metadata. **Always update it in the same turn you add/change/remove a job.** Two runners: agentTurn=true → LLM cron / agentTurn=false (pure relay) → OS scheduler + `scripts/relay_run.py`. Drift detection: `scripts/cron_registry_check.py`.
+- cron registry: `memory/cron-registry.json` — the source of truth for ALL cron jobs (category: reminder/report/automation, with purpose + reviewBy). Do not infer jobs from cron names/prompts; read this explicit metadata. **Always update it in the same turn you add/change/remove a job.** `agentTurn` picks the payload: true → `openclaw cron add --message` (LLM cron) / false → `--command` (pure relay, no agent turn). Drift detection: `scripts/cron_registry_check.py`.
 - [inbound hooks](memory/hooks/) — durable inbound workflows (see `hooks/README.md`). Check the relevant hook before replying to an inbound message.
 - user structured notes: `memory/users/<user-id>.md` (+ `.weekly_schedule.json` etc.) — per-user habits, constraints, schedules. Sample: `memory/users/example-user.md`.
 - daily raw logs: `memory/YYYY-MM-DD.md` — today + yesterday auto-load; older ones via memory search.

@@ -14,8 +14,7 @@ A personal morning news digest. A cron job (e.g. daily 07:30 → a chat channel)
 
 Index of automation scripts. The source of truth for each spec is its own header comment (one line here).
 
-- `cron_registry_check.py` — detects drift between the cron registry and the live scheduler (LLM cron + OS-scheduler relays), plus reviewBy-overdue and execution errors (report-only).
-- `relay_run.py` — runs a relay job (agentTurn=false) by id and posts its stdout to the delivery target. Referenced by the registry; not shipped in this template — see the registry `runner: launchd` example. _(Bring your own relay runner + chat poster.)_
+- `cron_registry_check.py` — detects drift between the cron registry and `openclaw cron list --json` (both agentTurn=true LLM jobs and agentTurn=false command-payload jobs), plus agentTurn/payload-kind mismatches, reviewBy-overdue, and execution errors (report-only).
 
 ## Local device / connection notes
 

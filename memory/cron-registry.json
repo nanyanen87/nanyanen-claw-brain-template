@@ -1,14 +1,14 @@
 {
   "schemaVersion": 2,
   "updatedAt": "2026-01-15",
-  "_note": "DUMMY sample registry for the template. Replace channel tokens, cronJobId/launchdLabel, and jobs with your own. Channel IDs are placeholders (e.g. <CHANNEL_GENERAL>) — real deployments use the chat platform's channel IDs.",
+  "_note": "DUMMY sample registry for the template. Replace channel tokens, cronJobId, and jobs with your own. Channel IDs are placeholders (e.g. <CHANNEL_GENERAL>) — real deployments use the chat platform's channel IDs.",
   "policy": {
     "sourceOfTruth": "This file is the deterministic registry for ALL cron jobs (category: reminder | report | automation). Cron job names/prompts must not be inferred; this metadata is the source of truth. New cron jobs MUST be registered here at creation time.",
     "summaryRule": "Weekly reminder summaries include only jobs with category=reminder, enabled=true, and weeklySummary.targets containing the requested target.",
     "privacyRule": "A reminder is never summarized into a channel unless that channel is explicitly listed in weeklySummary.targets.",
-    "driftRule": "scripts/cron_registry_check.py compares this registry against the live scheduler weekly. Registry edits do NOT sync to cron; fix drift manually in whichever side is wrong.",
+    "driftRule": "scripts/cron_registry_check.py compares this registry against `openclaw cron list --json` weekly — every job, LLM or command, is queried the same way. Registry edits do NOT sync to cron; fix drift manually in whichever side is wrong.",
     "reviewRule": "Each job has reviewBy (YYYY-MM-DD). When overdue, decide keep/change/remove, then bump reviewBy.",
-    "executionRule": "Each job declares agentTurn. agentTurn=false means the job is a pure relay (deterministic script stdout -> chat); it runs via the OS scheduler (runner=launchd, scripts/relay_run.py <id>) and must NOT consume an agent turn. agentTurn=true jobs need LLM judgment/generation and run via the LLM cron (runner=openclaw-cron). When creating a new periodic job, decide agentTurn first: if no LLM judgment is needed, make it a relay job."
+    "executionRule": "Each job declares agentTurn. agentTurn=false means the job is a pure relay (a deterministic script's stdout posted verbatim, no LLM judgment) — create it with `openclaw cron add --command <shell>` so it runs on the Gateway and never consumes an agent turn. agentTurn=true jobs need LLM judgment/generation — create them with `--message` so they run through the LLM cron. Decide agentTurn first when adding a new periodic job: no LLM judgment needed → --command. Both kinds are the same `openclaw-cron` mechanism and show up identically in `openclaw cron list --json`, which is what keeps this portable across hosts (dev Mac or a VPS)."
   },
   "targets": {
     "chat:channel:<CHANNEL_GENERAL>": {
@@ -68,7 +68,7 @@
       "title": "Morning calendar relay",
       "category": "report",
       "enabled": true,
-      "launchdLabel": "ai.openclaw.relay.daily-calendar-relay",
+      "cronJobId": "00000000-0000-4000-8000-000000000003",
       "deliveryTarget": "chat:channel:<CHANNEL_GENERAL>",
       "schedule": {
         "kind": "cron",
@@ -76,11 +76,11 @@
         "tz": "Asia/Tokyo",
         "label": "Daily 08:00"
       },
-      "purpose": "Pure relay: a deterministic script prints today's calendar; stdout is posted verbatim. No LLM judgment needed.",
+      "purpose": "Pure relay: `openclaw cron add --command '<script that prints today's calendar>' --announce` posts stdout verbatim. No LLM judgment needed, so no agent turn is spent.",
       "createdAt": "2026-01-01",
       "reviewBy": "2027-01-01",
       "agentTurn": false,
-      "runner": "launchd"
+      "runner": "openclaw-cron"
     }
   ]
 }

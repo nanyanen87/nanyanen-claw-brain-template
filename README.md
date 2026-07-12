@@ -47,8 +47,8 @@ The rule that holds it together: **the index and the filesystem must always agre
 
 Every periodic job is registered in `memory/cron-registry.json` with a `purpose`, a `category` (reminder/report/automation), and a `reviewBy` date. Two things make this more than documentation:
 
-- **`agentTurn` decides the runner.** Pure relays (a deterministic script's stdout posted verbatim, no LLM judgment) run on the OS scheduler and must *not* consume an agent turn. Only jobs needing generation/judgment use the LLM cron. Deciding this first keeps token spend off mechanical jobs.
-- **The ledger is audited against reality.** `scripts/cron_registry_check.py` diffs the registry against the live scheduler — unregistered jobs, dead pointers, schedule/target mismatches, `reviewBy`-overdue entries, and jobs erroring in production — and reports (never mutates). Drift is fixed by hand on whichever side is wrong.
+- **`agentTurn` decides the payload.** Pure relays (a deterministic script's stdout posted verbatim, no LLM judgment) are created with `openclaw cron add --command <shell>` and run on the Gateway — no agent turn spent. Jobs needing generation/judgment use `--message` and run through the LLM cron. Both are the same underlying mechanism, so both show up identically in `openclaw cron list --json`. Deciding `agentTurn` first keeps token spend off mechanical jobs, and keeps this portable: the ledger doesn't care whether the Gateway is on a dev Mac or a VPS.
+- **The ledger is audited against reality.** `scripts/cron_registry_check.py` diffs the registry against `openclaw cron list --json` — unregistered jobs, dead pointers, schedule/target mismatches, `agentTurn` vs. live payload-kind mismatches, `reviewBy`-overdue entries, and jobs erroring in production — and reports (never mutates). Drift is fixed by hand on whichever side is wrong.
 
 `reviewBy` is the quiet part: it forces a periodic "keep / change / retire" decision so dead automations don't accumulate.
 
@@ -97,7 +97,6 @@ Repeatable workflows do **not** get written into memory as prose. They become a 
 - **Not a maintained OSS package.** No release cadence, no support, no compatibility promise. Upstream OpenClaw will change; the boundary table will drift. Treat this as a snapshot to learn from and fork, not a dependency to pin.
 - **Not a config you can run unedited.** The cron ledger, user notes, and identity are dummies. Nothing here is wired to a real chat platform or scheduler until you wire it.
 - **Not security-hardened for your environment.** The skills assume a trusted, single-user workspace. Review before pointing them at anything real.
-- **Not fully portable.** The drift checker (`scripts/cron_registry_check.py`) and `skills/memory-maintenance/check.sh` currently verify launchd units only — macOS-specific. On Linux/systemd, relay jobs are not covered until you port those checks.
 - **Not bilingual throughout.** The README is English/Japanese, but skill documentation and script output are currently Japanese-only.
 
 ## License
