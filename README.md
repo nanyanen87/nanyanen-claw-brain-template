@@ -52,6 +52,25 @@ Every periodic job is registered in `memory/cron-registry.json` with a `purpose`
 
 `reviewBy` is the quiet part: it forces a periodic "keep / change / retire" decision so dead automations don't accumulate.
 
+**What a weekly audit report looks like** — both outputs below were produced by the shipped `scripts/cron_registry_check.py` against the shipped dummy registry (with `openclaw cron list --json` stubbed to a fixture, so you can reproduce them without a live Gateway):
+
+```
+【cron 台帳ドリフトチェック｜2026-07-13】
+問題なし。台帳 3 件（agentTurn 2 / command 1） / 実 cron 3 件、全項目一致。
+※台帳: memory/cron-registry.json（新規 cron 作成時は登録必須）
+```
+
+And when the live scheduler has drifted from the ledger:
+
+```
+【cron 台帳ドリフトチェック｜2026-07-13】
+■ ドリフト 3 件（台帳か cron のどちらか正しい側に手動で合わせる）
+- 台帳未登録の cron: 「ad-hoc-experiment」(11111111)
+- schedule 不一致: daily-standup-reminder 台帳=0 9 * * 1-5@Asia/Tokyo 実機=30 9 * * 1-5@Asia/Tokyo
+- payload 種別不一致: daily-calendar-relay 台帳 agentTurn=False（command 想定）実機=agentTurn
+※台帳: memory/cron-registry.json（新規 cron 作成時は登録必須）
+```
+
 ### 3. Procedures are tools, not memory
 
 Repeatable workflows do **not** get written into memory as prose. They become a skill (`skills/<name>/SKILL.md`) or a script (`scripts/*` with a self-documenting header), and memory points at them by path — nothing more. `TOOLS.md` is the thin index over those, deferring to each `SKILL.md` / script header for the actual spec. This keeps the "how" versioned next to the code that runs it, and keeps memory about facts and decisions.
