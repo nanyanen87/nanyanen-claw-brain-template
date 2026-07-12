@@ -1,0 +1,16 @@
+{
+  "_comment": "news-digest の収集ソース（例。すべて公開 RSS/Atom）。category キーは preferences.md のクォータと対応。壊れたフィードの差し替え・追加は agent が自律的にやってよい（SKILL.md 参照）。自分の興味に合わせて入れ替えること。",
+  "categories": {
+    "tech": [
+      { "name": "Hacker News (80pt+)", "url": "https://hnrss.org/frontpage?points=80" },
+      { "name": "Lobsters", "url": "https://lobste.rs/rss" }
+    ],
+    "science": [
+      { "name": "Quanta Magazine", "url": "https://www.quantamagazine.org/feed/" },
+      { "name": "Phys.org Physics", "url": "https://phys.org/rss-feed/physics-news/" }
+    ],
+    "wildcard": [
+      { "name": "Example Wildcard Feed", "url": "https://example.com/wildcard/feed.xml" }
+    ]
+  }
+}

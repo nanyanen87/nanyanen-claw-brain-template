@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 2,
+  "updatedAt": "2026-01-15",
+  "_note": "DUMMY sample registry for the template. Replace channel tokens, cronJobId/launchdLabel, and jobs with your own. Channel IDs are placeholders (e.g. <CHANNEL_GENERAL>) — real deployments use the chat platform's channel IDs.",
+  "policy": {
+    "sourceOfTruth": "This file is the deterministic registry for ALL cron jobs (category: reminder | report | automation). Cron job names/prompts must not be inferred; this metadata is the source of truth. New cron jobs MUST be registered here at creation time.",
+    "summaryRule": "Weekly reminder summaries include only jobs with category=reminder, enabled=true, and weeklySummary.targets containing the requested target.",
+    "privacyRule": "A reminder is never summarized into a channel unless that channel is explicitly listed in weeklySummary.targets.",
+    "driftRule": "scripts/cron_registry_check.py compares this registry against the live scheduler weekly. Registry edits do NOT sync to cron; fix drift manually in whichever side is wrong.",
+    "reviewRule": "Each job has reviewBy (YYYY-MM-DD). When overdue, decide keep/change/remove, then bump reviewBy.",
+    "executionRule": "Each job declares agentTurn. agentTurn=false means the job is a pure relay (deterministic script stdout -> chat); it runs via the OS scheduler (runner=launchd, scripts/relay_run.py <id>) and must NOT consume an agent turn. agentTurn=true jobs need LLM judgment/generation and run via the LLM cron (runner=openclaw-cron). When creating a new periodic job, decide agentTurn first: if no LLM judgment is needed, make it a relay job."
+  },
+  "targets": {
+    "chat:channel:<CHANNEL_GENERAL>": {
+      "label": "chat #general",
+      "kind": "chat-channel"
+    },
+    "chat:channel:<CHANNEL_NEWS>": {
+      "label": "chat #news",
+      "kind": "chat-channel"
+    }
+  },
+  "jobs": [
+    {
+      "id": "weekly-memory-maintenance",
+      "title": "Weekly memory tidy-up",
+      "category": "automation",
+      "enabled": true,
+      "cronJobId": "00000000-0000-4000-8000-000000000001",
+      "deliveryTarget": "chat:channel:<CHANNEL_GENERAL>",
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 8 * * 1",
+        "tz": "Asia/Tokyo",
+        "label": "Mondays 08:30"
+      },
+      "purpose": "Run skills/memory-maintenance to keep the L0 index thin, fix dead pointers, and distill old daily logs.",
+      "createdAt": "2026-01-01",
+      "reviewBy": "2027-01-01",
+      "agentTurn": true,
+      "runner": "openclaw-cron"
+    },
+    {
+      "id": "daily-standup-reminder",
+      "title": "Morning standup nudge",
+      "category": "reminder",
+      "enabled": true,
+      "cronJobId": "00000000-0000-4000-8000-000000000002",
+      "deliveryTarget": "chat:channel:<CHANNEL_GENERAL>",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 9 * * 1-5",
+        "tz": "Asia/Tokyo",
+        "label": "Weekdays 09:00"
+      },
+      "purpose": "Remind the owner of today's top priority and any calendar events in the next 24h.",
+      "createdAt": "2026-01-01",
+      "reviewBy": "2027-01-01",
+      "weeklySummary": {
+        "targets": ["chat:channel:<CHANNEL_GENERAL>"],
+        "label": "weekday morning nudge"
+      },
+      "agentTurn": true,
+      "runner": "openclaw-cron"
+    },
+    {
+      "id": "daily-calendar-relay",
+      "title": "Morning calendar relay",
+      "category": "report",
+      "enabled": true,
+      "launchdLabel": "ai.openclaw.relay.daily-calendar-relay",
+      "deliveryTarget": "chat:channel:<CHANNEL_GENERAL>",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 8 * * *",
+        "tz": "Asia/Tokyo",
+        "label": "Daily 08:00"
+      },
+      "purpose": "Pure relay: a deterministic script prints today's calendar; stdout is posted verbatim. No LLM judgment needed.",
+      "createdAt": "2026-01-01",
+      "reviewBy": "2027-01-01",
+      "agentTurn": false,
+      "runner": "launchd"
+    }
+  ]
+}

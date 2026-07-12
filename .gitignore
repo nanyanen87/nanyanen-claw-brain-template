@@ -1,0 +1,17 @@
+# Runtime state written by skills/scripts — not part of the template
+state/
+out/
+tmp/
+
+# Search index / caches
+.openclaw/
+**/__pycache__/
+*.pyc
+
+# Local env / secrets — never commit
+.env
+.env.*
+*.local
+
+# OS junk
+.DS_Store
