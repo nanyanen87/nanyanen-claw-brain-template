@@ -2,9 +2,18 @@
 
 Environment-specific tool notes. The source of truth for how a skill works is its `SKILL.md`; for a script's spec, its header comment — this file is only an index and environment-specific caveats.
 
+## Brain core
+
+- Shared/private boundary and promotion policy: `README.md`
+- Drift check: `scripts/brain_core_sync.py --upstream <template-path>`
+
+## Automation governance (skill: `automation-governance`)
+
+Use this skill for cron, heartbeat, and hook changes or audits. Prefer the least machinery and one small source of current intent when one is actually needed.
+
 ## Memory maintenance (skill: `memory-maintenance` 🧹)
 
-Weekly memory-tidying harness. A cron job (e.g. Monday 08:30) runs it. The source of truth for the procedure is `skills/memory-maintenance/SKILL.md`; the mechanical check is its `check.sh` (read-only). When a human says "tidy up memory," follow the same SKILL.md.
+Read-only-first memory audit. The procedure lives in `skills/memory-maintenance/SKILL.md`; its `check.sh` reports retrieval and context-pressure signals without making changes. Schedule it only if the deployment demonstrates a need.
 
 ## News digest (skill: `news-digest` 📰)
 

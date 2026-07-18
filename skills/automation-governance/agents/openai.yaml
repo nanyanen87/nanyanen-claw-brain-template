@@ -1,0 +1,4 @@
+interface:
+  display_name: "Automation Governance"
+  short_description: "Keep OpenClaw automation simple and inspectable"
+  default_prompt: "Audit or change this workspace's scheduled work using the least machinery that preserves intent."

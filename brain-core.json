@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "upstream": "https://github.com/nanyanen87/nanyanen-claw-brain-template",
+  "sharedPaths": [
+    "AGENTS.md",
+    "brain-core.json",
+    "scripts/brain_core_sync.py",
+    "skills/automation-governance/SKILL.md",
+    "skills/automation-governance/agents/openai.yaml",
+    "skills/memory-maintenance/SKILL.md",
+    "skills/memory-maintenance/agents/openai.yaml",
+    "skills/memory-maintenance/check.sh"
+  ],
+  "privateOverlay": [
+    "SOUL.md",
+    "IDENTITY.md",
+    "USER.md",
+    "MEMORY.md",
+    "HEARTBEAT.md",
+    "TOOLS.md",
+    ".openclaw/**",
+    "memory/**",
+    "scripts/** except scripts/brain_core_sync.py",
+    "skills/** except sharedPaths"
+  ]
+}

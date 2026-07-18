@@ -1,0 +1,4 @@
+interface:
+  display_name: "Memory Maintenance"
+  short_description: "Audit memory without discarding source history"
+  default_prompt: "Audit this workspace's memory and simplify only where retrieval or context cost is demonstrated."

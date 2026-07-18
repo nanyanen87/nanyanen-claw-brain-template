@@ -1,122 +1,113 @@
 # openclaw-brain-template
 
-A starter "brain" for an [OpenClaw](https://openclaw.ai)-style personal AI manager: the always-on identity, memory, and operations layer that lives in the agent's home workspace. It ships an anonymized `AGENTS.md` / `SOUL.md` / `IDENTITY.md`, a three-tier progressive-disclosure memory convention, two example skills that split deterministic work from LLM judgment, and a self-auditing cron ledger. It is a **template plus a written explanation of the conventions** — not a running product. Fill in the placeholders, delete what you don't want, and make it yours.
-
----
+A small shared brain core and anonymized personal-workspace template for [OpenClaw](https://openclaw.ai). It keeps durable evidence and instance data private, current state small, capabilities discoverable, and irreversible boundaries explicit. It is a **brain distribution**, not the OpenClaw runtime or a prescribed reasoning pipeline.
 
 ## これは何か / なぜ作ったか / 何が独自か
 
-**これは何か。** OpenClaw のような「常駐 AI マネージャー」の頭脳（ホームワークスペース）を組むための雛形です。人格（`SOUL.md` / `IDENTITY.md`）、行動規約（`AGENTS.md`）、階層化メモリ（`MEMORY.md` + `memory/`）、スキル（`skills/`）、定期ジョブ台帳（`memory/cron-registry.json`）と自己監査スクリプト（`scripts/`）が一式入っています。個人情報はすべてダミー／`<PLACEHOLDER>` に置換済みで、**規約・構造・設計思想の文章はそのまま**残してあります。
+**これは何か。** OpenClawを個人AIとして長期運用するための薄い共有coreとworkspace例です。人格、memory、skill、automationの置き場所は示しますが、agentの思考手順を一つに固定しません。個人情報はダミーまたはplaceholderです。
 
-**なぜ作ったか。** OpenClaw 本体はランタイム（ゲートウェイ・スキル仕様・cron 実行）を与えますが、「エージェントが長期に破綻しないための運用規約」までは規定しません。実運用で効いた規約 — メモリを薄い索引から辿らせる、手順はメモリに書かずツール化する、定期ジョブは台帳で正を持ち実機との差分を自己監査する — を、他の人が流用できる形に切り出したものです。
+**なぜ作ったか。** OpenClaw本体はGateway、channel、workspace context、memory検索、skills、cron、heartbeat、実行履歴を提供します。deployment側に必要なのは、それらを再実装することではなく、常時ロードを小さくし、個人データを共有policyから分離し、必要な能力をjust-in-timeで使える状態に保つことです。
 
-**何が独自か。** 下の「上流との境界表」に集約しています。要は、OpenClaw 本体が持つ「スキル標準」「cron のジョブ型分離」「実行ログの照合」の上に、本テンプレが **メモリの階層規約＋週次自己蒸留**、**purpose/reviewBy 付き cron 台帳＋台帳↔実機のドリフト監査**、**TOOLS.md 索引規約** を足しています。
+**何が独自か。** このtemplateは、rawな会話・操作履歴を証拠、memoryや要約を交換可能なview、現在状態を小さなprojectionとして扱います。共有するのは安全境界と再利用可能なmechanismだけです。個別の判断や経験を、初回からglobal ruleへ変換しません。
 
----
+## Boundary with OpenClaw
 
-## Upstream boundary — what OpenClaw already gives you vs. what this template adds
+> As of OpenClaw 2026-07. OpenClaw moves quickly; treat this table as a current boundary, not an upstream specification.
 
-> **As of OpenClaw 2026-07.** OpenClaw moves fast; re-check upstream before assuming a row still holds. This table is a snapshot of the division of labor, not a spec.
-
-| Concern | In OpenClaw core (upstream) | Added by this template |
+| Concern | OpenClaw runtime | This repository |
 | --- | --- | --- |
-| **Skills** | `SKILL.md` standard (AgentSkills spec) + Skill Workshop for authoring | Two worked examples that document their *design intent* in the skill itself, and split deterministic collection from LLM judgment (`news-digest`, `memory-maintenance`) |
-| **Scheduled jobs** | Cron with a `command` payload that separates LLM vs. non-LLM job types | A **purpose/reviewBy-annotated cron ledger** (`memory/cron-registry.json`) as the source of truth, plus **ledger↔live drift self-audit** (`scripts/cron_registry_check.py`) |
-| **Execution accounting** | Reconciliation between the runtime and its execution logs | — (relies on upstream) |
-| **Memory** | — (no prescribed memory hierarchy) | **L0/L1/L2 progressive-disclosure memory convention** + **weekly self-distillation** via `memory-maintenance` |
-| **Tool index** | — | **`TOOLS.md` index convention** — a thin index that points at each skill's `SKILL.md` and each script's header, never duplicating them |
+| Context | Injects workspace context and recent memory | Keeps the always-loaded contract small |
+| History and memory | Stores session/runtime history and provides memory retrieval | Treats history as evidence and workspace memory as private derived state |
+| Skills | Discovers workspace skills | Provides a few optional governance capabilities and examples |
+| Automation | Runs cron commands, agent turns, heartbeat, and hooks | Shows simple reminder-first operation and optional drift auditing |
+| Safety | Provides runtime and channel boundaries | States stable authority and privacy constraints |
+| Distribution | Supports a configurable workspace per agent | Defines an exact shared core and a private overlay |
 
-The middle column is deliberately honest about what you get for free. The value here is the right column: a set of conventions that keep a long-lived agent's context small and its automation honest.
+The runtime should remain the runtime. The brain should remain mostly data, small state, and a few durable boundaries.
 
----
+## Design
 
-## Design philosophy
+### Evidence first
 
-### 1. Memory as a hierarchy (progressive disclosure)
+Conversation and tool history are the best evidence of what happened and what the human decided. Preserve source history when practical. Summaries, topic files, indexes, and extracted decisions may be rebuilt as models improve.
 
-The failure mode of agent memory is a single ever-growing file that burns context on every load. This template splits it into layers, and only the thin top layer is always loaded:
+Do not automatically turn one remark, workaround, or failure into policy. A future extraction layer can propose human-decision candidates while retaining their source, scope, uncertainty, and later corrections.
 
-- **L0 — `MEMORY.md` (index):** one line per topic, and crucially *when to read it*. Kept under ~100 lines / 3 KB. No details — only pointers. Retrieval quality is decided by the quality of these index lines.
-- **L1 — `memory/<topic>.md`:** one topic per file, kept flat. ~400-token chunks index best. 80% of lookups should be satisfiable here.
-- **L2 — `memory/knowledge/<topic>.md`:** long detail, *not* auto-loaded, reachable only by an explicit path from L1/L0. One deep-link hop max — no L2→L2 chains.
-- **Daily logs — `memory/YYYY-MM-DD.md`:** raw notes. Today + yesterday auto-load; older ones via search.
+### Small state, just-in-time context
 
-The rule that holds it together: **the index and the filesystem must always agree.** A file the index doesn't mention is invisible; a pointer to a file that doesn't exist is a dead pointer. `skills/memory-maintenance/check.sh` verifies both mechanically.
+Keep only the state needed to resume work, honor a commitment, or avoid a known mistake. Store larger history as flat Markdown, JSONL, or runtime records and retrieve it when relevant. Do not inject the full archive into every session.
 
-### 2. Cron ledger + self-audit
+This template includes an L0/L1-style memory example because it is practical today, not because every deployment must preserve that hierarchy forever.
 
-Every periodic job is registered in `memory/cron-registry.json` with a `purpose`, a `category` (reminder/report/automation), and a `reviewBy` date. Two things make this more than documentation:
+### Sparse harness
 
-- **`agentTurn` decides the payload.** Pure relays (a deterministic script's stdout posted verbatim, no LLM judgment) are created with `openclaw cron add --command <shell>` and run on the Gateway — no agent turn spent. Jobs needing generation/judgment use `--message` and run through the LLM cron. Both are the same underlying mechanism, so both show up identically in `openclaw cron list --json`. Deciding `agentTurn` first keeps token spend off mechanical jobs, and keeps this portable: the ledger doesn't care whether the Gateway is on a dev Mac or a VPS.
-- **The ledger is audited against reality.** `scripts/cron_registry_check.py` diffs the registry against `openclaw cron list --json` — unregistered jobs, dead pointers, schedule/target mismatches, `agentTurn` vs. live payload-kind mismatches, `reviewBy`-overdue entries, and jobs erroring in production — and reports (never mutates). Drift is fixed by hand on whichever side is wrong.
+Skills and scripts are capabilities, not compulsory stages in every task. Add a skill when repeated use reveals non-obvious domain knowledge or a fragile procedure. Add a deterministic check when it cheaply catches a demonstrated failure. Otherwise, allow the current model to reason from the user's request, state, and available evidence.
 
-`reviewBy` is the quiet part: it forces a periodic "keep / change / retire" decision so dead automations don't accumulate.
+Keep hard constraints for irreversible effects: secrets, privacy, external communication, destructive operations, and authenticated authority.
 
-**What a weekly audit report looks like** — both outputs below were produced by the shipped `scripts/cron_registry_check.py` against the shipped dummy registry (with `openclaw cron list --json` stubbed to a fixture, so you can reproduce them without a live Gateway):
+### Reminder-first work
 
+When work benefits from conversation, schedule a reminder that starts a human-agent session rather than embedding the future session in cron. Let the session use current context and current model capability.
+
+Deterministic jobs may still run directly. The included `memory/cron-registry.json` and `scripts/cron_registry_check.py` are optional examples for deployments that need declared intent and drift checks; they are not a mandatory universal schema.
+
+## Shared core and private overlay
+
+`brain-core.json` declares the few paths that may be synchronized exactly between this OSS checkout and a private workspace.
+
+- **Shared core:** generic `AGENTS.md`, guarded sync, and small memory/automation audit capabilities.
+- **Private overlay:** `SOUL.md`, `IDENTITY.md`, `USER.md`, `MEMORY.md`, `TOOLS.md`, heartbeat state, actual jobs, hooks, scripts, channel ids, credentials, conversation-derived state, and all personal memory.
+- **Promotion rule:** promote a mechanism only after repeated evidence shows it is still needed beyond ordinary agent judgment. Never promote raw identities, decisions, targets, or private history.
+
+Check a private workspace without modifying it:
+
+```bash
+python3 scripts/brain_core_sync.py \
+  --upstream /path/to/nanyanen-claw-brain-template \
+  --target /path/to/private-workspace
 ```
-【cron 台帳ドリフトチェック｜2026-07-13】
-問題なし。台帳 3 件（agentTurn 2 / command 1） / 実 cron 3 件、全項目一致。
-※台帳: memory/cron-registry.json（新規 cron 作成時は登録必須）
-```
 
-And when the live scheduler has drifted from the ledger:
-
-```
-【cron 台帳ドリフトチェック｜2026-07-13】
-■ ドリフト 3 件（台帳か cron のどちらか正しい側に手動で合わせる）
-- 台帳未登録の cron: 「ad-hoc-experiment」(11111111)
-- schedule 不一致: daily-standup-reminder 台帳=0 9 * * 1-5@Asia/Tokyo 実機=30 9 * * 1-5@Asia/Tokyo
-- payload 種別不一致: daily-calendar-relay 台帳 agentTurn=False（command 想定）実機=agentTurn
-※台帳: memory/cron-registry.json（新規 cron 作成時は登録必須）
-```
-
-### 3. Procedures are tools, not memory
-
-Repeatable workflows do **not** get written into memory as prose. They become a skill (`skills/<name>/SKILL.md`) or a script (`scripts/*` with a self-documenting header), and memory points at them by path — nothing more. `TOOLS.md` is the thin index over those, deferring to each `SKILL.md` / script header for the actual spec. This keeps the "how" versioned next to the code that runs it, and keeps memory about facts and decisions.
-
----
+Use `--apply` only after review. It refuses to overwrite dirty shared paths and never copies private overlay paths.
 
 ## Layout
 
-```
+```text
 .
-├── AGENTS.md          # behavior/routing conventions (generic layer)
-├── SOUL.md            # personality + default language
-├── IDENTITY.md        # who the agent is (placeholders)
-├── USER.md            # who the human is (blank template)
-├── MEMORY.md          # L0 index (thin)
-├── TOOLS.md           # index over skills + scripts
-├── HEARTBEAT.md       # periodic-check checklist (empty by default)
+├── AGENTS.md          # small shared authority/context contract
+├── SOUL.md            # private persona template
+├── IDENTITY.md        # private identity template
+├── USER.md            # private user template
+├── MEMORY.md          # optional small memory/index view
+├── TOOLS.md           # local capability index
+├── HEARTBEAT.md       # empty by default
+├── brain-core.json    # shared/private boundary
 ├── skills/
-│   ├── memory-maintenance/   # weekly memory tidy-up (check.sh + SKILL.md)
-│   └── news-digest/          # deterministic fetch + LLM selection
+│   ├── automation-governance/ # least-machinery runner selection
+│   ├── memory-maintenance/    # read-only-first memory audit
+│   └── news-digest/           # worked personal workflow example
 ├── scripts/
-│   └── cron_registry_check.py  # ledger↔live drift audit (report-only)
+│   ├── brain_core_sync.py
+│   └── cron_registry_check.py # optional drift example
 └── memory/
-    ├── cron-registry.json   # dummy job ledger (schema v2)
-    ├── example-project.md   # L1 topic (dummy)
-    ├── 2026-01-15.md        # daily log (dummy)
-    ├── hooks/               # inbound-message workflow hooks
-    └── users/               # per-user structured notes (dummy)
+    ├── cron-registry.json     # optional dummy state example
+    ├── hooks/
+    └── users/
 ```
 
 ## Using it
 
-1. Copy this into your agent's home workspace (OpenClaw's default is a `~/openclaw-workspace`-style directory).
-2. Fill in the `<PLACEHOLDER>` tokens in `IDENTITY.md`, `SOUL.md`, `USER.md`.
-3. Replace the dummy `memory/` contents and the `cron-registry.json` sample with your own.
-4. Keep or drop the example skills. `memory-maintenance` is the one most worth keeping.
+1. Copy the template into an OpenClaw workspace, or adopt only the paths in `brain-core.json`.
+2. Fill the private persona and user placeholders.
+3. Replace dummy memory and automation data with your own, or remove examples you do not need.
+4. Start simple. Keep a capability only when real use demonstrates its value.
 
----
+## What this is not
 
-## What this is NOT
-
-- **Not a running product.** There is no gateway, no installer, no daemon here. It is scaffold files plus the conventions that make them cohere. OpenClaw (or an equivalent host) provides the runtime.
-- **Not a maintained OSS package.** No release cadence, no support, no compatibility promise. Upstream OpenClaw will change; the boundary table will drift. Treat this as a snapshot to learn from and fork, not a dependency to pin.
-- **Not a config you can run unedited.** The cron ledger, user notes, and identity are dummies. Nothing here is wired to a real chat platform or scheduler until you wire it.
-- **Not security-hardened for your environment.** The skills assume a trusted, single-user workspace. Review before pointing them at anything real.
-- **Not bilingual throughout.** The README is English/Japanese, but skill documentation and script output are currently Japanese-only.
+- **Not a runtime or installer.** OpenClaw provides execution.
+- **Not a mandatory memory schema.** The included hierarchy is an example view over private evidence.
+- **Not a workflow engine.** Skills do not replace general agent judgment.
+- **Not automatic self-modification.** Learned rules require evidence and deliberate promotion.
+- **Not a config to run unedited.** Jobs, identities, and channels are placeholders.
 
 ## License
 
