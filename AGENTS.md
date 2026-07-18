@@ -37,7 +37,7 @@ Memory rules: when you add or change a topic file, update its `MEMORY.md` index 
 
 When asked to organize a user's week, do not rely on a calendar alone. First check structured user memory such as `memory/users/<user-id>.weekly_schedule.json`, then relevant cron jobs/scripts, then calendar events. Treat recurring habits/weekday themes and one-off calendar events as separate layers and merge them explicitly.
 
-Capture what matters. Decisions, context, things to remember. Skip the secrets unless asked to keep them.
+Capture what matters: decisions, context, and durable facts. Never store secret values in memory, even when asked; store only identifiers, locations, ownership, and retrieval or rotation procedures.
 
 ### 🧠 MEMORY.md - Your Long-Term Memory
 
