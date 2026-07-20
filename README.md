@@ -31,7 +31,7 @@ The runtime should remain the runtime. The brain should remain mostly data, smal
 
 Conversation and tool history are the best evidence of what happened and what the human decided. Preserve source history when practical. Summaries, topic files, indexes, and extracted decisions may be rebuilt as models improve.
 
-Do not automatically turn one remark, workaround, or failure into policy. A future extraction layer can propose human-decision candidates while retaining their source, scope, uncertainty, and later corrections.
+Do not automatically turn one remark, workaround, or failure into policy. For periodic upstream feedback, review the Git commit range directly rather than maintaining a parallel candidate ledger; retain source, scope, uncertainty, and later corrections during the private review.
 
 ### Small state, just-in-time context
 
@@ -58,6 +58,7 @@ Deterministic jobs may still run directly. The included `memory/cron-registry.js
 - **Shared core:** generic `AGENTS.md`, guarded sync, and small memory/automation audit capabilities.
 - **Private overlay:** `SOUL.md`, `IDENTITY.md`, `USER.md`, `MEMORY.md`, `TOOLS.md`, heartbeat state, actual jobs, hooks, scripts, channel ids, credentials, conversation-derived state, and all personal memory.
 - **Promotion rule:** promote a mechanism only after repeated evidence shows it is still needed beyond ordinary agent judgment. Never promote raw identities, decisions, targets, or private history.
+- **Feedback rule:** treat every private Living Brain commit since its reviewed checkpoint as input. Classify at hunk level with `brain-feedback`; a whole commit is not automatically public.
 
 Check a private workspace without modifying it:
 
@@ -83,6 +84,7 @@ Use `--apply` only after review. It refuses to overwrite dirty shared paths and 
 ├── brain-core.json    # shared/private boundary
 ├── skills/
 │   ├── automation-governance/ # least-machinery runner selection
+│   ├── brain-feedback/        # private commit review and safe promotion
 │   ├── memory-maintenance/    # read-only-first memory audit
 │   └── news-digest/           # worked personal workflow example
 ├── scripts/

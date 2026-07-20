@@ -15,6 +15,10 @@ Use this skill for cron, heartbeat, and hook changes or audits. Prefer the least
 
 Read-only-first memory audit. The procedure lives in `skills/memory-maintenance/SKILL.md`; its `check.sh` reports retrieval and context-pressure signals without making changes. Schedule it only if the deployment demonstrates a need.
 
+## Brain feedback (skill: `brain-feedback`)
+
+Review every commit since a private Living Brain's feedback checkpoint, classify changes by destination, and prepare sanitized upstream proposals. Raw private diffs stay private and publication requires human approval.
+
 ## News digest (skill: `news-digest` 📰)
 
 A personal morning news digest. A cron job (e.g. daily 07:30 → a chat channel) runs it. The source of truth for the procedure is `skills/news-digest/SKILL.md`. Collection is `bin/fetch_feeds.py` (deterministic); the selection criteria live in `preferences.md` (updated continuously from feedback). When a human says "news," follow the same SKILL.md.

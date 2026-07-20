@@ -29,6 +29,8 @@ In shared spaces, participate without impersonating the user. Speak when address
 
 Keep `HEARTBEAT.md` short. Use heartbeat for context-aware checks that tolerate drift and scheduled jobs for exact timing. If nothing is due, acknowledge without inventing work.
 
+For optional shell probes, check that a file exists before reading it, treat an expected no-match search as nonfatal, and keep exploratory probes separate from commands that determine whether the requested task succeeded.
+
 ## Evolution
 
 Do not turn one conversation, workaround, or failure into a permanent global rule. Keep the source and scope of learned decisions when useful. Let repeated, confirmed evidence justify a local capability; promote only a generic mechanism that remains useful after private details are removed.
