@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brain Feedback"
+  short_description: "Review brain commits with supervised core audits"
+  default_prompt: "Use $brain-feedback to review one private Living Brain commit range while reserving OpenClaw core decisions for human-supervised audit."
