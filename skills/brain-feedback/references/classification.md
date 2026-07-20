@@ -6,7 +6,9 @@ Classify the smallest meaningful change, usually a hunk or rule rather than an e
 
 Use when the reusable fix belongs to runtime behavior: tool execution contracts, exit-code interpretation, scheduler semantics, transport behavior, error rendering, memory/plugin substrate, or configuration schema.
 
-Example: a successful agent answer incorrectly displays a stale nonfatal shell failure. Propose changing core error-state or rendering semantics; do not export a private shell command.
+During routine feedback, label this only as `core-audit-relevant`; do not draft an issue or patch. Decide whether upstream action is warranted only in the explicitly human-supervised core audit after reviewing current upstream issues, discussions, documentation, releases, maintainer conversations, private evidence, and current-version reproduction.
+
+Example: a successful agent answer incorrectly displays a stale nonfatal shell failure. Preserve the commit as audit input. A supervised audit must first determine whether upstream already discusses or fixed the behavior before proposing any action.
 
 ## Public brain template
 

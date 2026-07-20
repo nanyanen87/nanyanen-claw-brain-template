@@ -17,7 +17,7 @@ Read-only-first memory audit. The procedure lives in `skills/memory-maintenance/
 
 ## Brain feedback (skill: `brain-feedback`)
 
-Review every commit since a private Living Brain's feedback checkpoint, classify changes by destination, and prepare sanitized upstream proposals. Raw private diffs stay private and publication requires human approval.
+Review every commit since a private Living Brain's feedback checkpoint and prepare sanitized public-brain proposals. Raw private diffs stay private; OpenClaw core decisions require a separate human-supervised audit of current upstream conversations.
 
 ## News digest (skill: `news-digest` 📰)
 

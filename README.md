@@ -58,7 +58,7 @@ Deterministic jobs may still run directly. The included `memory/cron-registry.js
 - **Shared core:** generic `AGENTS.md`, guarded sync, and small memory/automation audit capabilities.
 - **Private overlay:** `SOUL.md`, `IDENTITY.md`, `USER.md`, `MEMORY.md`, `TOOLS.md`, heartbeat state, actual jobs, hooks, scripts, channel ids, credentials, conversation-derived state, and all personal memory.
 - **Promotion rule:** promote a mechanism only after repeated evidence shows it is still needed beyond ordinary agent judgment. Never promote raw identities, decisions, targets, or private history.
-- **Feedback rule:** treat every private Living Brain commit since its reviewed checkpoint as input. Classify at hunk level with `brain-feedback`; a whole commit is not automatically public.
+- **Feedback rule:** treat every private Living Brain commit since its reviewed checkpoint as input. Classify at hunk level with `brain-feedback`; a whole commit is not automatically public. OpenClaw core issues are considered only in a separate human-supervised audit that reviews current upstream conversations.
 
 Check a private workspace without modifying it:
 
